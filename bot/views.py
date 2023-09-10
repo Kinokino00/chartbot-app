@@ -14,17 +14,39 @@ from linebot.models import (
 )
 
 from crawler.main import get_big_lottory
+from crawler.train import get_stations, get_train_data
 
 line_bot_api = LineBotApi(settings.LINE_CHANNEL_ACCESS_TOKEN)
 parse = WebhookParser(settings.LINE_CHANNEL_SECRET)
 
 
+menu_str = ""
+
+
 def index(request):
-    return HttpResponse("chatbot v1.0")
+    return HttpResponse("chatbot v1.2")
+
+
+def get_menu():
+    global menu_str
+    if menu_str == "":
+        stations = get_stations()
+        menu = {i + 1: station for i, station in enumerate(stations)}
+        count = 0
+        for k, v in menu.items():
+            menu_str += "{:2}.{:4}".format(k, v)
+            count += 1
+            if count % 4 == 0:
+                menu_str += "\n"
+    # return menu_str  #因有global menu_str就不用寫
 
 
 @csrf_exempt  # 安全請求(必寫)
 def callback(request):
+    global menu_str
+    get_menu()
+    print(menu_str)
+
     if request.method == "POST":
         signature = request.META["HTTP_X_LINE_SIGNATURE"]
         body = request.body.decode("utf-8")
@@ -36,46 +58,9 @@ def callback(request):
             return HttpResponseBadRequest()
         for event in events:
             if isinstance(event, MessageEvent):
-                # 此兩物件為相同為true(即為可辨識)就運行，events表user傳入之訊息
                 text = event.message.text
                 print(text)
-                if text == "1":
-                    # message = "早安"
-                    message = TextSendMessage(text="早安")
-                elif text == "2":
-                    message = TextSendMessage(text="午安")
-                elif "樂透" in text:
-                    nums = get_big_lottory()
-                    message = TextSendMessage(text=nums)
-                elif "捷運" in text:
-                    if "台中" in text:
-                        img_url = "https://assets.piliapp.com/s3pxy/mrt_taiwan/taichung/20201112_zh.png?v=2"
-                    elif "高雄" in text:
-                        img_url = "https://www.krtc.com.tw/Content/userfiles/images/guide-map.jpg?v=c24_1"
-                    else:
-                        img_url = "https://web.metro.taipei/pages/assets/images/routemap2023n.png"
-                    message = ImageSendMessage(
-                        original_content_url=img_url, preview_image_url=img_url
-                    )
-                elif "台北車站" in text:
-                    message = LocationSendMessage(
-                        title="台北車站",
-                        address="地址",
-                        latitude=25.047778,
-                        longitude=121.517222,
-                    )
-                elif "桃園" in text:
-                    message = StickerSendMessage(package_id=446, sticker_id=1988)
-
-                else:
-                    message = TextSendMessage(text="不知道")
-                try:
-                    line_bot_api.reply_message(
-                        event.reply_token,
-                        message,
-                    )
-                except Exception as e:
-                    print(e)
+                message = TextSendMessage(text=menu_str)
         return HttpResponse()
     else:
         return HttpResponseBadRequest()
