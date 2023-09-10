@@ -15,6 +15,7 @@ from linebot.models import (
 
 from crawler.main import get_big_lottory
 from crawler.train import get_stations, get_train_data2
+from datetime import datetime
 
 line_bot_api = LineBotApi(settings.LINE_CHANNEL_ACCESS_TOKEN)
 parse = WebhookParser(settings.LINE_CHANNEL_SECRET)
@@ -66,8 +67,9 @@ def callback(request):
                 print(text)
                 try:
                     if text == "exit":
+                        text = "感謝您的使用~ (0可重新查詢)"
                         step = 0
-                    elif text == "start" and step == 0:
+                    elif text == "0" and step == 0:
                         text = menu_str + "\n請輸入起始站點:"
                         step += 1
                     elif step == 1:
@@ -77,18 +79,27 @@ def callback(request):
                         step += 1
                     elif step == 2:
                         endStation = menu[eval(text)]
-                        text = f"({startStation})-({endStation})，請輸入乘車日期:"
+                        text = f"({startStation})-({endStation})，請輸入乘車日期(輸入.為今日):"
                         step += 1
                     elif step == 3:
-                        rideDate = text
-                        text = f"({startStation})-({endStation})，乘車日期:({rideDate})\n請輸入查詢起始時間:"
+                        if text == ".":
+                            rideDate = datetime.now().strftime("%Y/%m/%d")
+                        else:
+                            rideDate = text
+                        text = f"({startStation})-({endStation})，乘車日期:({rideDate})\n請輸入查詢起始時間(輸入.為現在時間):"
                         step += 1
                     elif step == 4:
-                        startTime = text
-                        text = f"({startStation})-({endStation})，乘車日期:({rideDate}) 時間:({startTime})\n請輸入查詢終止時間:"
+                        if text == ".":
+                            startTime = datetime.now().strftime("%H:%M")
+                        else:
+                            startTime = text
+                        text = f"({startStation})-({endStation})，乘車日期:({rideDate}) 時間:({startTime})\n請輸入查詢終止時間(輸入.為23:59):"
                         step += 1
                     elif step == 5:
-                        endTime = text
+                        if text == ".":
+                            endTime = "23:59"
+                        else:
+                            endTime = text
                         text = get_train_data2(
                             stations[startStation],
                             stations[endStation],
@@ -96,11 +107,11 @@ def callback(request):
                             startTime,
                             endTime,
                         )
-                        text += "\n感謝您的使用~"
+                        text += "\n感謝您的使用~ (0可重新查詢)"
                         step = 0
                 except Exception as e:
                     print(e)
-                    text = "輸入不正確! 請重新輸入...(start可重新查詢)"
+                    text = "輸入不正確! 請重新輸入...(0可重新查詢)"
                 message = TextSendMessage(text=text)
                 try:
                     line_bot_api.reply_message(
