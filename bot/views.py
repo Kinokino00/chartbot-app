@@ -14,13 +14,15 @@ from linebot.models import (
 )
 
 from crawler.main import get_big_lottory
-from crawler.train import get_stations, get_train_data
+from crawler.train import get_stations, get_train_data2
 
 line_bot_api = LineBotApi(settings.LINE_CHANNEL_ACCESS_TOKEN)
 parse = WebhookParser(settings.LINE_CHANNEL_SECRET)
 
 
 menu_str = ""
+train_str = ""
+stations = {}
 
 
 def index(request):
@@ -28,7 +30,7 @@ def index(request):
 
 
 def get_menu():
-    global menu_str
+    global menu_str, stations
     if menu_str == "":
         stations = get_stations()
         menu = {i + 1: station for i, station in enumerate(stations)}
@@ -43,7 +45,7 @@ def get_menu():
 
 @csrf_exempt  # 安全請求(必寫)
 def callback(request):
-    global menu_str
+    global menu_str, stations
     get_menu()
     print(menu_str)
 
@@ -60,9 +62,13 @@ def callback(request):
             if isinstance(event, MessageEvent):
                 text = event.message.text
                 print(text)
-                if text == "火車":
+                if text == "1":
                     text = menu_str
-                    message = TextSendMessage(text=text)
+                elif text == "2":
+                    text = get_train_data2(
+                        stations["臺北"], stations["基隆"], "2023/09/10", "00:00", "23:59"
+                    )
+                message = TextSendMessage(text=text)
                 try:
                     line_bot_api.reply_message(
                         event.reply_token,
