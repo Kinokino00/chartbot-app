@@ -60,7 +60,16 @@ def callback(request):
             if isinstance(event, MessageEvent):
                 text = event.message.text
                 print(text)
-                message = TextSendMessage(text=menu_str)
+                if text == "火車":
+                    text = menu_str
+                    message = TextSendMessage(text=text)
+                try:
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        message,
+                    )
+                except Exception as e:
+                    print(e)
         return HttpResponse()
     else:
         return HttpResponseBadRequest()
