@@ -20,7 +20,7 @@ def get_big_lottory():
         nums = trs[4].text.split()[1:]
         big_lottory = ",".join(nums[:-1]) + f" 特別號:{nums[-1]}"
         date = ",".join(trs[1].text.split()[:2])
-        result = f"期數/日期: {date}\n號碼: {big_lottory}"
+        result = f"期別數/日期: {date}\n號碼: {big_lottory}"
         print(result)
 
         return result
